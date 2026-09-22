@@ -4,17 +4,17 @@
   "description": "Lightweight, config-driven HTTP mock server",
   "type": "module",
   "bin": {
-    "qms": "./dist/index.mjs"
+    "qms": "./dist/index.js"
   },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
+      "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
