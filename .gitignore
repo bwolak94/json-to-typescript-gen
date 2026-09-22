@@ -1,0 +1,59 @@
+# Environment
+.env
+.env.local
+*.env
+
+# Node / pnpm
+node_modules/
+.turbo/
+dist/
+build/
+.next/
+*.tsbuildinfo
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python (legacy, remove after full migration to TS)
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.uv/
+.mypy_cache/
+.pytype/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+src/db/migrations/versions/__pycache__/
+
+# Secrets — NEVER commit these
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.claude/
+.snapshots/
+docs/
