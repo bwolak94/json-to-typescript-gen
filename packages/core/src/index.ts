@@ -22,6 +22,10 @@ export { ConfigError } from './config/index.js'
 export { RouteWatcher } from './watcher/index.js'
 export type { ReloadHook, WatcherSnapshot, WatcherConfig } from './watcher/index.js'
 
+// Template engine
+export { renderBody, createSeededFaker } from './template/index.js'
+export type { TemplateContext, RenderOptions } from './template/index.js'
+
 // Router
 export { Trie, Router } from './router/index.js'
 export type { Params, MatchResult, RouteEntry, FindResult } from './router/index.js'
