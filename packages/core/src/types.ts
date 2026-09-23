@@ -7,6 +7,7 @@ export type HttpMethod =
   | 'OPTIONS'
   | 'HEAD'
   | 'ALL'
+  | '*'
 
 export type DelaySpec =
   | number
