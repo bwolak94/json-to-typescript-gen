@@ -24,7 +24,7 @@ export interface CompiledRoute {
 }
 
 export interface CompiledResponse {
-  when?: unknown // Predicate — implemented in feat/f3-conditional-matcher
+  when?: unknown // CompiledPredicate — cast by matcher/matcher.ts to avoid circular import
   scenario?: string
   status: number
   headers: Record<string, string>
