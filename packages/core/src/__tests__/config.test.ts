@@ -9,7 +9,7 @@ import {
   loadConfig,
   ConfigError,
 } from '../config/index.js'
-import { loadMockFile, findMockFiles } from '../config/loader.js'
+import { loadMockFile, findMockFiles, loadConfigFile, loadMockDirectory } from '../config/loader.js'
 import { mergeRoutes, generateRouteId } from '../config/merger.js'
 import { didYouMean } from '../config/errors.js'
 import {
@@ -528,5 +528,187 @@ resources:
     } finally {
       await rm(dir, { recursive: true, force: true })
     }
+  })
+})
+
+// ─── loadMockFile — edge cases ────────────────────────────────────────────────
+
+describe('loadMockFile — edge cases', () => {
+  it('throws ConfigError for unsupported extension', async () => {
+    const f = await writeFixture('data.txt', 'hello')
+    await expect(loadMockFile(f)).rejects.toBeInstanceOf(ConfigError)
+  })
+
+  it('throws ConfigError for unsupported .xml extension', async () => {
+    const f = await writeFixture('data.xml', '<routes/>')
+    await expect(loadMockFile(f)).rejects.toBeInstanceOf(ConfigError)
+  })
+
+  it('wraps non-ConfigError parse failure as ConfigError', async () => {
+    const f = await writeFixture('broken2.json', '{ "routes": [{ "path": 123 }] }')
+    const err = await loadMockFile(f).catch((e) => e)
+    expect(err).toBeInstanceOf(ConfigError)
+  })
+
+  it('includes issues on schema validation failure', async () => {
+    const f = await writeFixture('bad-route.yaml', `
+routes:
+  - method: GET
+    path: no-slash
+`)
+    try {
+      await loadMockFile(f)
+      expect.fail('should have thrown')
+    } catch (e) {
+      expect(e).toBeInstanceOf(ConfigError)
+      if (e instanceof ConfigError) {
+        expect(e.issues).toBeDefined()
+        expect((e.issues?.length ?? 0) > 0).toBe(true)
+      }
+    }
+  })
+})
+
+// ─── loadConfigFile ───────────────────────────────────────────────────────────
+
+describe('loadConfigFile', () => {
+  it('returns null when no config file exists', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-cfgfile-'))
+    try {
+      const result = await loadConfigFile(undefined, dir)
+      expect(result).toBeNull()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('finds and loads qms.config.json in cwd', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-cfgfile2-'))
+    try {
+      await writeFile(join(dir, 'qms.config.json'), JSON.stringify({ port: 5000 }))
+      const result = await loadConfigFile(undefined, dir)
+      expect(result).not.toBeNull()
+      expect(result?.config.port).toBe(5000)
+      expect(result?.file).toContain('qms.config.json')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('loads an explicitly-provided config path', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-cfgfile3-'))
+    try {
+      const cfgPath = join(dir, 'custom.json')
+      await writeFile(cfgPath, JSON.stringify({ host: '127.0.0.1' }))
+      const result = await loadConfigFile(cfgPath, dir)
+      expect(result?.config.host).toBe('127.0.0.1')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('throws ConfigError for invalid config schema', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-cfgfile4-'))
+    try {
+      await writeFile(join(dir, 'qms.config.json'), JSON.stringify({ port: 'bad' }))
+      await expect(loadConfigFile(undefined, dir)).rejects.toBeInstanceOf(ConfigError)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('finds qms.config.yaml', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-cfgfile5-'))
+    try {
+      await writeFile(join(dir, 'qms.config.yaml'), 'port: 7777\n')
+      const result = await loadConfigFile(undefined, dir)
+      expect(result?.config.port).toBe(7777)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+// ─── loadMockDirectory ────────────────────────────────────────────────────────
+
+describe('loadMockDirectory', () => {
+  it('returns empty files and errors for empty directory', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-mockdir-'))
+    try {
+      const { files, errors } = await loadMockDirectory(dir)
+      expect(files).toHaveLength(0)
+      expect(errors).toHaveLength(0)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('loads all valid files', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-mockdir2-'))
+    try {
+      await writeFile(join(dir, 'a.yaml'), `routes:\n  - path: /a`)
+      await writeFile(join(dir, 'b.json'), JSON.stringify({ routes: [{ path: '/b' }] }))
+      const { files, errors } = await loadMockDirectory(dir)
+      expect(files).toHaveLength(2)
+      expect(errors).toHaveLength(0)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('collects errors for invalid files without throwing', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-mockdir3-'))
+    try {
+      await writeFile(join(dir, 'good.yaml'), `routes:\n  - path: /ok`)
+      await writeFile(join(dir, 'bad.yaml'), `routes:\n  - path: no-slash`)
+      const { files, errors } = await loadMockDirectory(dir)
+      expect(files).toHaveLength(1) // only good file
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(ConfigError)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('sets _origin on loaded routes', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-mockdir4-'))
+    try {
+      await writeFile(join(dir, 'routes.yaml'), `routes:\n  - path: /x`)
+      const { files } = await loadMockDirectory(dir, process.cwd(), 'openapi')
+      expect(files[0]?.routes[0]?._origin).toBe('openapi')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('sets _source.file on loaded routes', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'qms-mockdir5-'))
+    try {
+      await writeFile(join(dir, 'routes.yaml'), `routes:\n  - path: /x`)
+      const { files } = await loadMockDirectory(dir)
+      expect(files[0]?.routes[0]?._source.file).toContain('routes.yaml')
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+// ─── mergeRoutes — resources ──────────────────────────────────────────────────
+
+describe('mergeRoutes — resources', () => {
+  it('aggregates resources from multiple files', () => {
+    const r = mergeRoutes([
+      { routes: [], resources: [{ name: 'users', path: '/users', idField: 'id', filters: [], sort: false }], file: 'a' },
+      { routes: [], resources: [{ name: 'orders', path: '/orders', idField: 'id', filters: [], sort: false }], file: 'b' },
+    ])
+    expect(r.resources).toHaveLength(2)
+    expect(r.resources.map((x) => x.name).sort()).toEqual(['orders', 'users'])
+  })
+
+  it('returns empty resources when no files have resources', () => {
+    const r = mergeRoutes([
+      { routes: [], resources: [], file: 'x' },
+    ])
+    expect(r.resources).toHaveLength(0)
   })
 })

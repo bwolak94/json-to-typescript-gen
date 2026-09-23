@@ -27,7 +27,9 @@ export class Router<T extends RouteEntry> {
   private trees = new Map<string, Trie<T>>()
 
   add(route: T): void {
-    const method = route.method.toUpperCase()
+    const raw = route.method.toUpperCase()
+    // Normalize '*' to 'ALL' — both are accepted in the schema as method wildcards
+    const method = raw === '*' ? 'ALL' : raw
     if (!this.trees.has(method)) {
       this.trees.set(method, new Trie<T>())
     }

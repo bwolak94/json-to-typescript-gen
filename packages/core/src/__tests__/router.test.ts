@@ -135,6 +135,24 @@ describe('Router', () => {
     })
   })
 
+  describe('* method (alias for ALL)', () => {
+    it('matches any HTTP method when registered as *', () => {
+      const router = new Router<TestRoute>()
+      router.add(r('*', '/ping', 'ping'))
+      expect(router.find('GET', '/ping')?.route.name).toBe('ping')
+      expect(router.find('DELETE', '/ping')?.route.name).toBe('ping')
+      expect(router.find('PATCH', '/ping')?.route.name).toBe('ping')
+    })
+
+    it('specific method takes priority over * method', () => {
+      const router = new Router<TestRoute>()
+      router.add(r('*', '/ping', 'catchall'))
+      router.add(r('GET', '/ping', 'explicit'))
+      expect(router.find('GET', '/ping')?.route.name).toBe('explicit')
+      expect(router.find('POST', '/ping')?.route.name).toBe('catchall')
+    })
+  })
+
   describe('complex nested routes', () => {
     it('resolves multi-level nested params', () => {
       const router = new Router<TestRoute>()
