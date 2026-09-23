@@ -30,6 +30,10 @@ export type { TemplateContext, RenderOptions } from './template/index.js'
 export { compilePredicate, matchRequest, matchResponse } from './matcher/index.js'
 export type { CompiledPredicate } from './matcher/index.js'
 
+// Responders
+export { reply, resolveFileReply, executeHandler, mockRouteHeader, diagnosticNotFound, levenshtein } from './responders/index.js'
+export type { ReplyBuilder, ReplyData, BodyType, MockHandler, DiagnosticNotFoundBody, SimplifiedNotFoundBody } from './responders/index.js'
+
 // Router
 export { Trie, Router } from './router/index.js'
 export type { Params, MatchResult, RouteEntry, FindResult } from './router/index.js'
