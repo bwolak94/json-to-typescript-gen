@@ -211,6 +211,57 @@ describe('resolveFileReply', () => {
     expect(resolved.headers['content-type']).toBe('application/yaml')
   })
 
+  it('reads an HTML file with text/html content-type', async () => {
+    const filePath = join(tmpDir, 'page.html')
+    await writeFile(filePath, '<h1>Hello</h1>')
+
+    const r = reply(200).file(filePath)
+    const resolved = await resolveFileReply(r)
+
+    expect(resolved.bodyType).toBe('text')
+    expect(resolved.headers['content-type']).toBe('text/html; charset=utf-8')
+    expect(resolved.body).toBe('<h1>Hello</h1>')
+  })
+
+  it('reads a CSV file with text/csv content-type', async () => {
+    const filePath = join(tmpDir, 'data.csv')
+    await writeFile(filePath, 'a,b,c\n1,2,3\n')
+
+    const r = reply(200).file(filePath)
+    const resolved = await resolveFileReply(r)
+
+    expect(resolved.headers['content-type']).toBe('text/csv')
+  })
+
+  it('reads an XML file with application/xml content-type', async () => {
+    const filePath = join(tmpDir, 'data.xml')
+    await writeFile(filePath, '<root/>')
+
+    const r = reply(200).file(filePath)
+    const resolved = await resolveFileReply(r)
+
+    expect(resolved.headers['content-type']).toBe('application/xml')
+  })
+
+  it('falls back to application/octet-stream for unknown extension', async () => {
+    const filePath = join(tmpDir, 'data.bin')
+    await writeFile(filePath, 'binary content')
+
+    const r = reply(200).file(filePath)
+    const resolved = await resolveFileReply(r)
+
+    expect(resolved.headers['content-type']).toBe('application/octet-stream')
+  })
+
+  it('returns unchanged when body is not a string (guard)', async () => {
+    // Manually simulate a malformed file reply (bodyType=file but body not a string)
+    const r = new ReplyBuilder(200)
+    r.bodyType = 'file'
+    r.body = undefined
+    const resolved = await resolveFileReply(r)
+    expect(resolved).toBe(r)
+  })
+
   it('preserves explicit headers from the original reply', async () => {
     const filePath = join(tmpDir, 'info.json')
     await writeFile(filePath, '{"ok":true}')
