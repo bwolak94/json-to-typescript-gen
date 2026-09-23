@@ -409,6 +409,91 @@ describe('multiple expressions', () => {
   })
 })
 
+// ─── `upper` edge cases ───────────────────────────────────────────────────────
+
+describe('upper — edge cases', () => {
+  it('returns non-string value unchanged (number)', () => {
+    // body.user.age is 30 (a number), upper passes it through as-is
+    const result = render('{{ upper body.user.age }}')
+    expect(result).toBe(30)
+  })
+
+  it('with no inner expression returns undefined', () => {
+    // "upper" with no argument — inner is empty string → evaluate('') falls to default → returns ''
+    const result = render('{{ upper }}')
+    expect(result).toBeUndefined()
+  })
+})
+
+// ─── `repeat` edge cases ──────────────────────────────────────────────────────
+
+describe('repeat — edge cases', () => {
+  it('clamps negative count to 0', () => {
+    const result = render('{{ repeat -5 }}')
+    expect(result).toEqual([])
+  })
+
+  it('floors float count', () => {
+    const result = render('{{ repeat 2.9 }}')
+    expect((result as unknown[]).length).toBe(2)
+  })
+})
+
+// ─── `pick` edge cases ────────────────────────────────────────────────────────
+
+describe('pick — edge cases', () => {
+  it('returns undefined when called with no arguments', () => {
+    const result = render('{{ pick }}')
+    expect(result).toBeUndefined()
+  })
+})
+
+// ─── `jwt` iss claim ─────────────────────────────────────────────────────────
+
+describe('jwt — iss claim', () => {
+  it('includes iss when provided', () => {
+    const result = render('{{ jwt sub=u iss=example.com exp=3600 }}') as string
+    const payload = JSON.parse(Buffer.from(result.split('.')[1]!, 'base64url').toString())
+    expect(payload.iss).toBe('example.com')
+  })
+
+  it('omits iss when not provided', () => {
+    const result = render('{{ jwt sub=u exp=3600 }}') as string
+    const payload = JSON.parse(Buffer.from(result.split('.')[1]!, 'base64url').toString())
+    expect('iss' in payload).toBe(false)
+  })
+})
+
+// ─── `default` edge cases ─────────────────────────────────────────────────────
+
+describe('default — edge cases', () => {
+  it('with fewer than 3 tokens returns the second token as-is', () => {
+    // {{ default fallback }} — tokens: ['default', 'fallback']
+    const result = render('{{ default fallback }}')
+    expect(result).toBe('fallback')
+  })
+
+  it('returns undefined when only "default" with no tokens', () => {
+    // {{ default }} — tokens: ['default']
+    const result = render('{{ default }}')
+    expect(result).toBeUndefined()
+  })
+})
+
+// ─── `faker.*` — unknown module ───────────────────────────────────────────────
+
+describe('faker.* — unknown module', () => {
+  it('returns undefined for nonexistent faker module', () => {
+    const result = render('{{ faker.nonexistentModule.someMethod }}')
+    expect(result).toBeUndefined()
+  })
+
+  it('returns undefined for faker with only one dot (malformed)', () => {
+    const result = render('{{ faker.person }}')
+    expect(result).toBeUndefined()
+  })
+})
+
 // ─── No-template pass-through ─────────────────────────────────────────────────
 
 describe('no-template pass-through', () => {

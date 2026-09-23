@@ -125,6 +125,37 @@ describe('Router', () => {
       const router = new Router<TestRoute>()
       expect(router.allowedMethods('/nowhere')).toHaveLength(0)
     })
+
+    it('ALL registered expands to standard methods in allowedMethods', () => {
+      const router = new Router<TestRoute>()
+      router.add(r('ALL', '/api', 'all'))
+      const methods = router.allowedMethods('/api')
+      expect(methods).toContain('GET')
+      expect(methods).toContain('POST')
+      expect(methods).toContain('PUT')
+      expect(methods).toContain('PATCH')
+      expect(methods).toContain('DELETE')
+      expect(methods).toContain('OPTIONS')
+    })
+
+    it('returns sorted results', () => {
+      const router = new Router<TestRoute>()
+      router.add(r('POST', '/things', 'create'))
+      router.add(r('GET', '/things', 'list'))
+      router.add(r('DELETE', '/things', 'bulk-delete'))
+      const methods = router.allowedMethods('/things')
+      const sorted = [...methods].sort()
+      expect(methods).toEqual(sorted)
+    })
+
+    it('works for paths with params', () => {
+      const router = new Router<TestRoute>()
+      router.add(r('GET', '/users/:id', 'get'))
+      router.add(r('PUT', '/users/:id', 'update'))
+      const methods = router.allowedMethods('/users/42')
+      expect(methods).toContain('GET')
+      expect(methods).toContain('PUT')
+    })
   })
 
   describe('case insensitivity for method lookup', () => {

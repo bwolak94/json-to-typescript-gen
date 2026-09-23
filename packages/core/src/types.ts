@@ -48,5 +48,5 @@ export interface MockContext {
   body: unknown
   state: unknown // StateStore — implemented in feat/f4-stateful-crud
   scenario: string
-  faker: unknown // Faker — implemented in feat/f2-template-engine
+  faker: import('@faker-js/faker').Faker
 }

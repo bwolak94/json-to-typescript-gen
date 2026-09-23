@@ -439,6 +439,72 @@ describe('generateRouteId', () => {
     const b = generateRouteId('GET', '/users', 'mocks/b.yaml')
     expect(a).not.toBe(b)
   })
+
+  it('handles method array by joining with underscore', () => {
+    const id = generateRouteId(['GET', 'POST'], '/items', 'mocks/items.yaml')
+    expect(id).toContain('get_post')
+  })
+
+  it('differs for different methods', () => {
+    const a = generateRouteId('GET', '/users', 'mocks/a.yaml')
+    const b = generateRouteId('POST', '/users', 'mocks/a.yaml')
+    expect(a).not.toBe(b)
+  })
+
+  it('slugifies wildcard segment to "wild"', () => {
+    const id = generateRouteId('GET', '/files/*', 'mocks/x.yaml')
+    expect(id).toContain('wild')
+  })
+
+  it('slugifies optional param segment to "opt"', () => {
+    const id = generateRouteId('GET', '/users/:id?/profile', 'mocks/x.yaml')
+    expect(id).toContain('opt')
+  })
+
+  it('result ends with a base36 hash suffix', () => {
+    const id = generateRouteId('GET', '/users', 'mocks/x.yaml')
+    // Format: method_pathslug_hash — last underscore-separated segment is the hash
+    const parts = id.split('_')
+    const hash = parts[parts.length - 1]!
+    expect(/^[a-z0-9]+$/.test(hash)).toBe(true)
+    expect(hash.length).toBeGreaterThan(0)
+  })
+})
+
+// ─── mergeRoutes — multi-method collision ─────────────────────────────────────
+
+describe('mergeRoutes — multi-method collision', () => {
+  it('multi-method array route creates one key per method', () => {
+    const multiMethod = {
+      ...makeRoute('GET', '/x', 'a.yaml'),
+      method: ['GET', 'POST'] as unknown as 'GET',
+    }
+    const conflict = makeRoute('GET', '/x', 'b.yaml')
+    const r = mergeRoutes([
+      { routes: [multiMethod, conflict], resources: [], file: 'x' },
+    ])
+    // GET:/x collision should be detected; POST:/x is fine
+    expect(r.collisions.length).toBeGreaterThanOrEqual(1)
+    expect(r.collisions[0]?.key).toBe('GET:/x')
+  })
+
+  it('collision warning includes kept and dropped source files', () => {
+    const r = mergeRoutes([
+      {
+        routes: [
+          makeRoute('DELETE', '/items/:id', 'first.yaml'),
+          makeRoute('DELETE', '/items/:id', 'second.yaml'),
+        ],
+        resources: [],
+        file: 'x',
+      },
+    ])
+    expect(r.warnings[0]).toContain('first.yaml')
+    expect(r.warnings[0]).toContain('second.yaml')
+    // kept → first.yaml (first-declaration-wins), dropped → second.yaml
+    expect(r.collisions[0]?.kept._source.file).toBe('first.yaml')
+    expect(r.collisions[0]?.dropped._source.file).toBe('second.yaml')
+  })
 })
 
 // ─── loadConfig (integration) ─────────────────────────────────────────────────

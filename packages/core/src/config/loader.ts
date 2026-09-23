@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { resolve, extname, dirname } from 'node:path'
+import { resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import yaml from 'yaml'
 import fg from 'fast-glob'
@@ -46,9 +46,13 @@ function parseYaml(content: string, file: string): unknown {
 async function loadTsModule(filePath: string): Promise<unknown> {
   // createJiti is async import to avoid top-level await and to support
   // dynamic loading. We import lazily so non-TS files don't pay the cost.
+  //
+  // Pass a fresh moduleCache ({}) on every call so that hot-reload always
+  // re-executes TypeScript handler files instead of returning stale cached
+  // modules. The overhead is negligible since loads are infrequent.
   const { createJiti } = await import('jiti')
   const parentUrl = pathToFileURL(filePath).href
-  const jiti = createJiti(parentUrl)
+  const jiti = createJiti(parentUrl, { moduleCache: false })
   const mod = (await jiti.import(filePath)) as { default?: unknown }
   return mod.default ?? mod
 }

@@ -12,6 +12,11 @@ afterEach(async () => {
 
 describe('HttpAdapter', () => {
   describe('lifecycle', () => {
+    it('isRunning is false before start', () => {
+      adapter = new HttpAdapter((_req, res) => { res.end() })
+      expect(adapter.isRunning).toBe(false)
+    })
+
     it('starts on port 0 and returns an OS-assigned port', async () => {
       adapter = new HttpAdapter((_req, res) => { res.end() })
       const { port, url } = await adapter.start(0)
