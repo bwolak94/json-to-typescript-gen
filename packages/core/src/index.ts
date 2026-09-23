@@ -26,6 +26,10 @@ export type { ReloadHook, WatcherSnapshot, WatcherConfig } from './watcher/index
 export { renderBody, createSeededFaker } from './template/index.js'
 export type { TemplateContext, RenderOptions } from './template/index.js'
 
+// Matcher
+export { compilePredicate, matchRequest, matchResponse } from './matcher/index.js'
+export type { CompiledPredicate } from './matcher/index.js'
+
 // Router
 export { Trie, Router } from './router/index.js'
 export type { Params, MatchResult, RouteEntry, FindResult } from './router/index.js'
