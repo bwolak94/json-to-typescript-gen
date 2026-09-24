@@ -40,8 +40,8 @@ export { Trie, Router } from './router/index.js'
 export type { Params, MatchResult, RouteEntry, FindResult } from './router/index.js'
 
 // Server
-export { HttpAdapter, handleSignals } from './server/index.js'
-export type { RequestHandler, ServerConfig, StartResult, LifecycleHook } from './server/index.js'
+export { HttpAdapter, handleSignals, createMockServer } from './server/index.js'
+export type { RequestHandler, ServerConfig, StartResult, LifecycleHook, MockServer, MockServerOptions, MockServerStartResult, UseRouteSpec } from './server/index.js'
 
 // State
 export {

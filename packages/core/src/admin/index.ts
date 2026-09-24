@@ -32,7 +32,7 @@ export interface AdminDeps {
   /** Request journal (F11). When provided, GET/DELETE /__admin/journal use it. */
   journal?: Journal
   /** Server start time, used to compute uptime in /health. */
-  startedAt?: Date
+  startedAt?: Date | undefined
 }
 
 // ─── createAdminHandler ───────────────────────────────────────────────────────
