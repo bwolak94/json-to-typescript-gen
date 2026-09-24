@@ -91,6 +91,8 @@ export {
   applyDelay,
 } from './chaos/index.js'
 export type { ChaosConfig, SlowBodyConfig } from './chaos/index.js'
+export { runChaosPre, wrapSlowBody } from './chaos/middleware.js'
+export type { ChaosOutcome } from './chaos/middleware.js'
 
 // Types
 export type {
