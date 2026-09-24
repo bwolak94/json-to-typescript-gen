@@ -69,14 +69,25 @@ export function matchRequest(predicate: CompiledPredicate, req: MockRequest): bo
  *
  * A response with `scenario: "name"` only activates when the effective
  * scenario matches.
+ *
+ * @param routeScenarios  Optional allowlist of scenario names declared at the
+ *   route level (`scenarios: [...]` in YAML). When provided and non-empty, the
+ *   entire route is skipped unless the effective scenario is in the list.
  */
 export function matchResponse(
   responses: CompiledResponse[],
   req: MockRequest,
   globalScenario: string,
+  routeScenarios?: string[],
 ): CompiledResponse | undefined {
   const headerScenario = getHeader(req.headers, 'x-mock-scenario')
   const activeScenario = headerScenario ?? globalScenario
+
+  // Route-level scenario filter: if the route declares a scenarios allowlist,
+  // the active scenario must be present in it — otherwise no response matches.
+  if (routeScenarios && routeScenarios.length > 0 && !routeScenarios.includes(activeScenario)) {
+    return undefined
+  }
 
   for (const response of responses) {
     if (response.scenario !== undefined && response.scenario !== activeScenario) {
