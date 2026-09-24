@@ -66,6 +66,10 @@ export type {
   ResourceRoute,
 } from './state/index.js'
 
+// Proxy
+export { proxyRequest, rewritePath, stripHopByHop } from './proxy/index.js'
+export type { ProxyConfig } from './proxy/index.js'
+
 // Admin API
 export { createAdminHandler, isAdminPath } from './admin/index.js'
 export type { AdminConfig, AdminDeps } from './admin/index.js'
