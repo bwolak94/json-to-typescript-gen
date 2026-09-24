@@ -70,6 +70,17 @@ export type {
 export { createAdminHandler, isAdminPath } from './admin/index.js'
 export type { AdminConfig, AdminDeps } from './admin/index.js'
 
+// Journal
+export { Journal, JournalAssertionError } from './journal/index.js'
+export type {
+  JournalEntry,
+  JournalRequest,
+  JournalResponse,
+  JournalQueryOptions,
+  EntryMatcher,
+  BodyMatcher,
+} from './journal/index.js'
+
 // Chaos
 export {
   resolveChaos,

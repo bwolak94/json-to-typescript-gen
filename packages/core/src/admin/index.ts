@@ -3,6 +3,7 @@ import type { CompiledRoute } from '../types.js'
 import type { StateStore } from '../state/store.js'
 import type { AnyRecord } from '../state/collection.js'
 import type { ChaosConfig } from '../chaos/index.js'
+import type { Journal } from '../journal/index.js'
 
 // ─── Public API types ─────────────────────────────────────────────────────────
 
@@ -28,6 +29,8 @@ export interface AdminDeps {
   addRuntimeRoute: (route: CompiledRoute) => void
   /** Admin mount config. */
   config: AdminConfig
+  /** Request journal (F11). When provided, GET/DELETE /__admin/journal use it. */
+  journal?: Journal
   /** Server start time, used to compute uptime in /health. */
   startedAt?: Date
 }
@@ -164,13 +167,14 @@ export function createAdminHandler(deps: AdminDeps): (
 
     // ── GET /__admin/journal ─────────────────────────────────────────────────
     if (method === 'GET' && sub === '/journal') {
-      // Journal module (F11) not yet implemented — return empty list
-      sendJson(res, 200, { entries: [] })
+      const entries = deps.journal ? deps.journal.query() : []
+      sendJson(res, 200, { entries })
       return true
     }
 
     // ── DELETE /__admin/journal ──────────────────────────────────────────────
     if (method === 'DELETE' && sub === '/journal') {
+      deps.journal?.clear()
       sendJson(res, 200, { ok: true })
       return true
     }
