@@ -3,6 +3,18 @@ import type http from 'node:http'
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
+export interface RecorderConfig {
+  /** Directory to write fixtures. Default: `'mocks/recorded'`. */
+  dir?: string
+  /** Additional header names to strip from recorded fixtures. */
+  sensitiveFields?: string[]
+  /**
+   * Which keys determine uniqueness when deduplicating fixture files.
+   * Default: `['method', 'path', 'query']`.
+   */
+  dedupKeys?: Array<'method' | 'path' | 'query'>
+}
+
 export interface ProxyConfig {
   /** Upstream base URL, e.g. `'http://api.example.com'`. */
   target: string
@@ -13,10 +25,14 @@ export interface ProxyConfig {
   pathRewrite?: Record<string, string>
   /**
    * Proxy mode.
-   * - `'off'`          — return 404 for unmatched requests (default)
-   * - `'passthrough'`  — forward to upstream, return response
+   * - `'off'`               — return 404 for unmatched requests (default)
+   * - `'passthrough'`       — forward to upstream, return response
+   * - `'record'`            — forward to upstream + write fixture file
+   * - `'replay-or-record'`  — serve fixture if exists, else proxy + record
    */
-  mode?: 'off' | 'passthrough'
+  mode?: 'off' | 'passthrough' | 'record' | 'replay-or-record'
+  /** Recorder config. Required when mode is `'record'` or `'replay-or-record'`. */
+  record?: RecorderConfig
 }
 
 // ─── Hop-by-hop headers (must not be forwarded) ───────────────────────────────

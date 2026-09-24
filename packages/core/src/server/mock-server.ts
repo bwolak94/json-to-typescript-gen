@@ -9,6 +9,7 @@ import { resolveChaos } from '../chaos/index.js'
 import { createAdminHandler } from '../admin/index.js'
 import { isAdminPath } from '../admin/index.js'
 import { proxyRequest } from '../proxy/index.js'
+import { proxyAndRecord, replayOrRecord } from '../recorder/index.js'
 import type { CompiledRoute, CompiledResponse, HttpMethod, MockRequest } from '../types.js'
 import type { ChaosConfig } from '../chaos/index.js'
 import type { AdminConfig } from '../admin/index.js'
@@ -188,7 +189,14 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
     if (!found) {
       // Proxy unmatched requests when configured
       if (proxyConfig && proxyConfig.mode !== 'off') {
-        await proxyRequest(proxyConfig, req, res, urlPath, parsedUrl.search.slice(1), rawBody)
+        const search = parsedUrl.search.slice(1)
+        if (proxyConfig.mode === 'record') {
+          await proxyAndRecord(proxyConfig, proxyConfig.record ?? {}, req, res, urlPath, search, rawBody)
+        } else if (proxyConfig.mode === 'replay-or-record') {
+          await replayOrRecord(proxyConfig, proxyConfig.record ?? {}, req, res, urlPath, search, rawBody)
+        } else {
+          await proxyRequest(proxyConfig, req, res, urlPath, search, rawBody)
+        }
         return
       }
 
