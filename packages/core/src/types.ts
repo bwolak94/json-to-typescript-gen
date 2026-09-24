@@ -21,6 +21,8 @@ export interface CompiledRoute {
   source: { file: string; line?: number }
   priority: number
   responses: CompiledResponse[]
+  /** Route-level scenario allowlist — from `scenarios: [...]` in YAML config. */
+  scenarios?: string[]
 }
 
 export interface CompiledResponse {

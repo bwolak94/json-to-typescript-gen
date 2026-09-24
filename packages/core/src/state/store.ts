@@ -1,12 +1,20 @@
 import { Collection, type AnyRecord } from './collection.js'
+import { ScenarioManager } from './scenarios.js'
 
 /**
- * Central registry of named `Collection` instances.
+ * Central registry of named `Collection` instances plus the active scenario.
  *
  * Used as `ctx.state` inside mock handlers and CRUD route handlers.
  */
 export class StateStore {
   private readonly collections = new Map<string, Collection>()
+
+  /** Manages the globally active scenario name. */
+  readonly scenarios: ScenarioManager
+
+  constructor(defaultScenario = '') {
+    this.scenarios = new ScenarioManager(defaultScenario)
+  }
 
   /** Get (or lazily create) a collection by name. */
   collection(name: string): Collection {
@@ -21,10 +29,18 @@ export class StateStore {
     this.collections.set(name, col)
   }
 
-  /** Reset all collections to empty (keeps registrations). */
-  reset(): void {
+  /**
+   * Reset all collections to empty and optionally reset the active scenario.
+   *
+   * @param defaultScenario  When provided, resets the active scenario to this
+   *   value (pass `''` to clear). When omitted, the scenario is left unchanged.
+   */
+  reset(defaultScenario?: string): void {
     for (const col of this.collections.values()) {
       col.reset()
+    }
+    if (defaultScenario !== undefined) {
+      this.scenarios.reset(defaultScenario)
     }
   }
 

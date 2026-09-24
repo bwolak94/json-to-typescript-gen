@@ -3,6 +3,8 @@ export type { AnyRecord, ListOptions, ListResult } from './collection.js'
 
 export { StateStore } from './store.js'
 
+export { ScenarioManager, extractScenarioHeader, routeMatchesScenario } from './scenarios.js'
+
 export { seedCollection } from './seeder.js'
 
 export { buildResourceRoutes } from './crud-generator.js'
