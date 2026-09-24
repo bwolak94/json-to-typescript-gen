@@ -46,7 +46,7 @@ export interface MockContext {
   params: Record<string, string>
   query: Record<string, string | string[]>
   body: unknown
-  state: unknown // StateStore — implemented in feat/f4-stateful-crud
+  state: import('./state/store.js').StateStore
   scenario: string
   faker: import('@faker-js/faker').Faker
 }

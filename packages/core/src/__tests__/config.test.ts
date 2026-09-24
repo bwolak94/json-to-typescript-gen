@@ -764,8 +764,8 @@ describe('loadMockDirectory', () => {
 describe('mergeRoutes — resources', () => {
   it('aggregates resources from multiple files', () => {
     const r = mergeRoutes([
-      { routes: [], resources: [{ name: 'users', path: '/users', idField: 'id', filters: [], sort: false }], file: 'a' },
-      { routes: [], resources: [{ name: 'orders', path: '/orders', idField: 'id', filters: [], sort: false }], file: 'b' },
+      { routes: [], resources: [{ name: 'users', path: '/users', idField: 'id', filters: [], sort: false, persist: false }], file: 'a' },
+      { routes: [], resources: [{ name: 'orders', path: '/orders', idField: 'id', filters: [], sort: false, persist: false }], file: 'b' },
     ])
     expect(r.resources).toHaveLength(2)
     expect(r.resources.map((x) => x.name).sort()).toEqual(['orders', 'users'])

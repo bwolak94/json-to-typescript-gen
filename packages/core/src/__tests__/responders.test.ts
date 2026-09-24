@@ -6,6 +6,7 @@ import { reply, resolveFileReply, ReplyBuilder } from '../responders/reply.js'
 import { executeHandler, mockRouteHeader } from '../responders/handler.js'
 import { diagnosticNotFound, levenshtein } from '../responders/diagnostic.js'
 import type { MockContext } from '../types.js'
+import { StateStore } from '../state/store.js'
 import { Faker, en } from '@faker-js/faker'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ function makeCtx(overrides: Partial<MockContext> = {}): MockContext {
     params: {},
     query: {},
     body: {},
-    state: {},
+    state: new StateStore(),
     scenario: '',
     faker: makeFaker(),
     ...overrides,
