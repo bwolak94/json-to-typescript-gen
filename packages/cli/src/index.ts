@@ -3,6 +3,8 @@ import { startCommand } from './commands/start.js'
 import { initCommand } from './commands/init.js'
 import { routesCommand } from './commands/routes.js'
 import { validateCommand } from './commands/validate.js'
+import { recordCommand } from './commands/record.js'
+import { openapiImportCommand, openapiSchemaCommand } from './commands/openapi.js'
 
 const VERSION = '0.0.1'
 
@@ -77,6 +79,53 @@ cli
   .option('--config <path>', 'Path to qms config file')
   .action((options: Record<string, unknown>) => {
     void validateCommand(parseConfigOption(options))
+  })
+
+// ─── qms record ──────────────────────────────────────────────────────────────
+
+cli
+  .command('record', 'Start proxy in record mode, writing fixtures for each unmatched request')
+  .option('--target <url>', 'Upstream base URL to forward requests to (required)')
+  .option('--port <port>', 'Port to listen on (default: OS-assigned)')
+  .option('--dir <path>', 'Directory to write recorded fixtures (default: mocks/recorded)')
+  .option('--mode <mode>', 'Record mode: record | replay-or-record (default: record)')
+  .action((options: Record<string, unknown>) => {
+    const target = options['target']
+    if (!target || typeof target !== 'string') {
+      process.stderr.write('Error: --target <url> is required\n')
+      process.exit(1)
+    }
+    void recordCommand({
+      target,
+      ...(options['port'] != null ? { port: Number(options['port']) } : {}),
+      ...(options['dir'] != null ? { dir: String(options['dir']) } : {}),
+      ...(options['mode'] != null ? { mode: String(options['mode']) as 'record' | 'replay-or-record' } : {}),
+    })
+  })
+
+// ─── qms openapi import ───────────────────────────────────────────────────────
+
+cli
+  .command('openapi import <spec>', 'Import an OpenAPI 3.x spec and eject routes to YAML files')
+  .option('--out <dir>', 'Output directory for generated mock files (default: mocks/)')
+  .option('--seed <n>', 'RNG seed for json-schema-faker body generation (default: 42)')
+  .action((spec: string, options: Record<string, unknown>) => {
+    void openapiImportCommand({
+      spec,
+      ...(options['out'] != null ? { out: String(options['out']) } : {}),
+      ...(options['seed'] != null ? { seed: Number(options['seed']) } : {}),
+    })
+  })
+
+// ─── qms openapi schema ───────────────────────────────────────────────────────
+
+cli
+  .command('openapi schema', 'Generate a JSON Schema for QMS mock files (VS Code autocomplete)')
+  .option('--out <path>', 'Output file path (default: schema.json)')
+  .action((options: Record<string, unknown>) => {
+    void openapiSchemaCommand({
+      ...(options['out'] != null ? { out: String(options['out']) } : {}),
+    })
   })
 
 // ─── Global flags ─────────────────────────────────────────────────────────────

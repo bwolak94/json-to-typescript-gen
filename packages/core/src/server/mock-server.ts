@@ -8,9 +8,12 @@ import { runChaosPre, wrapSlowBody } from '../chaos/middleware.js'
 import { resolveChaos } from '../chaos/index.js'
 import { createAdminHandler } from '../admin/index.js'
 import { isAdminPath } from '../admin/index.js'
+import { proxyRequest } from '../proxy/index.js'
+import { proxyAndRecord, replayOrRecord } from '../recorder/index.js'
 import type { CompiledRoute, CompiledResponse, HttpMethod, MockRequest } from '../types.js'
 import type { ChaosConfig } from '../chaos/index.js'
 import type { AdminConfig } from '../admin/index.js'
+import type { ProxyConfig } from '../proxy/index.js'
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -25,6 +28,8 @@ export interface MockServerOptions {
   chaos?: ChaosConfig
   /** Admin API config. Defaults to enabled at `/__admin`. */
   admin?: Partial<AdminConfig>
+  /** Proxy config for forwarding unmatched requests upstream. */
+  proxy?: ProxyConfig
 }
 
 export interface MockServerStartResult {
@@ -69,6 +74,7 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
     defaultScenario = '',
     chaos: initialChaos = {},
     admin: adminOpts = {},
+    proxy: proxyConfig,
   } = options
 
   // Shared state
@@ -152,7 +158,7 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
     }
 
     // Parse body
-    const body = await readBody(req)
+    const { parsed: body, raw: rawBody } = await readBody(req)
 
     const mockReq: MockRequest = {
       method,
@@ -181,6 +187,19 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
     // Match route
     const found = router.find(method, urlPath)
     if (!found) {
+      // Proxy unmatched requests when configured
+      if (proxyConfig && proxyConfig.mode !== 'off') {
+        const search = parsedUrl.search.slice(1)
+        if (proxyConfig.mode === 'record') {
+          await proxyAndRecord(proxyConfig, proxyConfig.record ?? {}, req, res, urlPath, search, rawBody)
+        } else if (proxyConfig.mode === 'replay-or-record') {
+          await replayOrRecord(proxyConfig, proxyConfig.record ?? {}, req, res, urlPath, search, rawBody)
+        } else {
+          await proxyRequest(proxyConfig, req, res, urlPath, search, rawBody)
+        }
+        return
+      }
+
       journal.record({
         timestamp: t0,
         request: { method, path: urlPath, headers, body },
@@ -347,16 +366,17 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function readBody(req: http.IncomingMessage): Promise<unknown> {
+function readBody(req: http.IncomingMessage): Promise<{ parsed: unknown; raw: Buffer }> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = []
     req.on('data', (chunk: Buffer) => chunks.push(chunk))
     req.on('end', () => {
-      const raw = Buffer.concat(chunks).toString('utf-8')
-      if (!raw) { resolve(undefined); return }
-      try { resolve(JSON.parse(raw)) } catch { resolve(raw) }
+      const raw = Buffer.concat(chunks)
+      const str = raw.toString('utf-8')
+      if (!str) { resolve({ parsed: undefined, raw }); return }
+      try { resolve({ parsed: JSON.parse(str), raw }) } catch { resolve({ parsed: str, raw }) }
     })
-    req.on('error', () => resolve(undefined))
+    req.on('error', () => resolve({ parsed: undefined, raw: Buffer.alloc(0) }))
   })
 }
 

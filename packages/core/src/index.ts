@@ -66,6 +66,19 @@ export type {
   ResourceRoute,
 } from './state/index.js'
 
+// OpenAPI
+export { importOpenApi, specToRoutes, convertPath, pickResponseBody, getDefaultStatus } from './openapi/index.js'
+export type { ImportOpenApiOptions } from './openapi/index.js'
+export { generateJsonSchema } from './openapi/schema.js'
+
+// Proxy
+export { proxyRequest, rewritePath, stripHopByHop } from './proxy/index.js'
+export type { ProxyConfig, RecorderConfig } from './proxy/index.js'
+
+// Recorder
+export { maskHeaders, buildSlug, buildFixturePath, readFixture, writeFixture, proxyAndRecord, replayOrRecord } from './recorder/index.js'
+export type { FixtureEntry } from './recorder/index.js'
+
 // Admin API
 export { createAdminHandler, isAdminPath } from './admin/index.js'
 export type { AdminConfig, AdminDeps } from './admin/index.js'
