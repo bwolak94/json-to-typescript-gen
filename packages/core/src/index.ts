@@ -66,6 +66,11 @@ export type {
   ResourceRoute,
 } from './state/index.js'
 
+// OpenAPI
+export { importOpenApi, specToRoutes, convertPath, pickResponseBody, getDefaultStatus } from './openapi/index.js'
+export type { ImportOpenApiOptions } from './openapi/index.js'
+export { generateJsonSchema } from './openapi/schema.js'
+
 // Proxy
 export { proxyRequest, rewritePath, stripHopByHop } from './proxy/index.js'
 export type { ProxyConfig, RecorderConfig } from './proxy/index.js'

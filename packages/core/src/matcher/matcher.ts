@@ -89,6 +89,16 @@ export function matchResponse(
     return undefined
   }
 
+
+  // X-Mock-Status: directly select a response by HTTP status code, bypassing
+  // scenario and when-clause matching. Useful for testing error paths without
+  // activating a global scenario.
+  const mockStatus = getHeader(req.headers, 'x-mock-status')
+  if (mockStatus !== undefined) {
+    const targetStatus = parseInt(mockStatus, 10)
+    if (!isNaN(targetStatus)) return responses.find((r) => r.status === targetStatus)
+  }
+
   for (const response of responses) {
     if (response.scenario !== undefined && response.scenario !== activeScenario) {
       continue
