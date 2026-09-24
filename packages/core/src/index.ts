@@ -8,6 +8,7 @@ export type {
   QmsConfig,
   RawRoute,
   ResourceConfig,
+  ResourceBelongsTo,
   LoadedRoute,
   RouteOrigin,
   LoadedFile,
@@ -41,6 +42,26 @@ export type { Params, MatchResult, RouteEntry, FindResult } from './router/index
 // Server
 export { HttpAdapter, handleSignals } from './server/index.js'
 export type { RequestHandler, ServerConfig, StartResult, LifecycleHook } from './server/index.js'
+
+// State
+export {
+  Collection,
+  CollectionError,
+  StateStore,
+  seedCollection,
+  buildResourceRoutes,
+  persistStore,
+  loadPersistedStore,
+  applyFilters,
+  applySort,
+  deepMerge,
+} from './state/index.js'
+export type {
+  AnyRecord,
+  ListOptions,
+  ListResult,
+  ResourceRoute,
+} from './state/index.js'
 
 // Types
 export type {

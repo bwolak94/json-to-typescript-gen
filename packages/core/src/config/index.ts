@@ -1,12 +1,12 @@
 import { resolve } from 'node:path'
 import { loadConfigFile, loadMockDirectory } from './loader.js'
 import { mergeRoutes } from './merger.js'
-import type { QmsConfig, RawRoute, ResourceConfig } from './schema.js'
+import type { QmsConfig, RawRoute, ResourceConfig, ResourceBelongsTo } from './schema.js'
 import type { LoadedRoute } from './loader.js'
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export type { QmsConfig, RawRoute, ResourceConfig }
+export type { QmsConfig, RawRoute, ResourceConfig, ResourceBelongsTo }
 export type { LoadedRoute, RouteOrigin, LoadedFile } from './loader.js'
 export type { RouteCollision, MergeResult } from './merger.js'
 export type {

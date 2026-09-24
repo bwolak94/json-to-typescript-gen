@@ -66,6 +66,13 @@ export const ResourcePaginationSchema = z.object({
   default: z.number().int().positive().default(10),
 })
 
+export const ResourceBelongsToSchema = z.object({
+  parentPath: z.string().startsWith('/'),
+  foreignKey: z.string(),
+  /** URL param for the parent's ID (defaults to last path segment + 'Id'). */
+  parentParam: z.string().optional(),
+})
+
 export const ResourceSchema = z.object({
   name: z.string().min(1),
   path: z.string().startsWith('/'),
@@ -74,6 +81,11 @@ export const ResourceSchema = z.object({
   pagination: ResourcePaginationSchema.optional(),
   filters: z.array(z.string()).default([]),
   sort: z.boolean().default(false),
+  belongsTo: ResourceBelongsToSchema.optional(),
+  /** true = persist to .qms/state.json, string = custom file path */
+  persist: z.union([z.boolean(), z.string()]).default(false),
+  /** Optional Zod schema (or any object with safeParse) for body validation → 422 */
+  validation: z.unknown().optional(),
 })
 
 // ─── Mock file (single YAML/JSON/TS file) ────────────────────────────────────
@@ -134,6 +146,7 @@ export type RawRoute = z.infer<typeof RawRouteSchema>
 export type MockFileInput = z.infer<typeof MockFileSchema>
 export type QmsConfig = z.infer<typeof QmsConfigSchema>
 export type ResourceConfig = z.infer<typeof ResourceSchema>
+export type ResourceBelongsTo = z.infer<typeof ResourceBelongsToSchema>
 
 /** Known top-level config keys — used for "did you mean?" suggestions. */
 export const QMS_CONFIG_KEYS = [
