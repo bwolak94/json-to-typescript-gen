@@ -40,8 +40,8 @@ export { Trie, Router } from './router/index.js'
 export type { Params, MatchResult, RouteEntry, FindResult } from './router/index.js'
 
 // Server
-export { HttpAdapter, handleSignals } from './server/index.js'
-export type { RequestHandler, ServerConfig, StartResult, LifecycleHook } from './server/index.js'
+export { HttpAdapter, handleSignals, createMockServer } from './server/index.js'
+export type { RequestHandler, ServerConfig, StartResult, LifecycleHook, MockServer, MockServerOptions, MockServerStartResult, UseRouteSpec } from './server/index.js'
 
 // State
 export {
@@ -65,6 +65,34 @@ export type {
   ListResult,
   ResourceRoute,
 } from './state/index.js'
+
+// Admin API
+export { createAdminHandler, isAdminPath } from './admin/index.js'
+export type { AdminConfig, AdminDeps } from './admin/index.js'
+
+// Journal
+export { Journal, JournalAssertionError } from './journal/index.js'
+export type {
+  JournalEntry,
+  JournalRequest,
+  JournalResponse,
+  JournalQueryOptions,
+  EntryMatcher,
+  BodyMatcher,
+} from './journal/index.js'
+
+// Chaos
+export {
+  resolveChaos,
+  isChaosEnabled,
+  sampleDelay,
+  shouldInjectError,
+  pickErrorStatus,
+  applyDelay,
+} from './chaos/index.js'
+export type { ChaosConfig, SlowBodyConfig } from './chaos/index.js'
+export { runChaosPre, wrapSlowBody } from './chaos/middleware.js'
+export type { ChaosOutcome } from './chaos/middleware.js'
 
 // Types
 export type {
