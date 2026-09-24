@@ -66,6 +66,21 @@ export type {
   ResourceRoute,
 } from './state/index.js'
 
+// Admin API
+export { createAdminHandler, isAdminPath } from './admin/index.js'
+export type { AdminConfig, AdminDeps } from './admin/index.js'
+
+// Chaos
+export {
+  resolveChaos,
+  isChaosEnabled,
+  sampleDelay,
+  shouldInjectError,
+  pickErrorStatus,
+  applyDelay,
+} from './chaos/index.js'
+export type { ChaosConfig, SlowBodyConfig } from './chaos/index.js'
+
 // Types
 export type {
   HttpMethod,
