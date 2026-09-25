@@ -1,0 +1,23 @@
+{
+  "name": "@quick-mock-server-example/react-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "mock": "qms start --config ./qms.config.ts --watch",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@quick-mock-server/core": "workspace:*",
+    "@quick-mock-server/testing": "workspace:*",
+    "@vitejs/plugin-react": "^4.0.0",
+    "quick-mock-server": "workspace:*",
+    "vite": "^5.0.0"
+  }
+}

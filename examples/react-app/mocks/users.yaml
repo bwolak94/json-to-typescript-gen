@@ -1,0 +1,24 @@
+routes:
+  - method: GET
+    path: /users
+    responses:
+      - scenario: empty
+        status: 200
+        body: []
+
+      - scenario: error
+        status: 500
+        body:
+          error: Failed to load users
+
+      - status: 200
+        body:
+          - id: 1
+            name: Alice
+            role: admin
+          - id: 2
+            name: Bob
+            role: user
+          - id: 3
+            name: Carol
+            role: user
