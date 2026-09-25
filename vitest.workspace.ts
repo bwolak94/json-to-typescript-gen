@@ -4,4 +4,5 @@ export default defineWorkspace([
   'packages/core',
   'packages/cli',
   'packages/testing',
+  'examples/openapi-petstore',
 ])

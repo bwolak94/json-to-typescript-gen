@@ -1,0 +1,18 @@
+{
+  "name": "@quick-mock-server-example/openapi-petstore",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "import": "qms openapi import ./specs/petstore.yaml --out ./mocks",
+    "start": "qms start --config ./qms.config.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@quick-mock-server/core": "workspace:*",
+    "quick-mock-server": "workspace:*"
+  },
+  "devDependencies": {
+    "@quick-mock-server/testing": "workspace:*",
+    "vitest": "^2.0.0"
+  }
+}
