@@ -4,11 +4,11 @@ import { resolve } from 'node:path'
 export default defineConfig({
   resolve: {
     alias: {
-      '@quick-mock-server/core': resolve(__dirname, '../core/src/index.ts'),
+      '@quick-mock-server/core': resolve(__dirname, '../../packages/core/src/index.ts'),
     },
   },
   test: {
     environment: 'node',
-    name: '@quick-mock-server/testing',
+    name: '@quick-mock-server-example/openapi-petstore',
   },
 })

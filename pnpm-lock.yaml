@@ -33,6 +33,22 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@20.19.43)
 
+  examples/openapi-petstore:
+    dependencies:
+      '@quick-mock-server/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      quick-mock-server:
+        specifier: workspace:*
+        version: link:../../packages/cli
+    devDependencies:
+      '@quick-mock-server/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@20.19.43)
+
   packages/cli:
     dependencies:
       '@quick-mock-server/core':
