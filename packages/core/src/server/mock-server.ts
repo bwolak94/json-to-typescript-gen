@@ -3,14 +3,15 @@ import { URL } from 'node:url'
 import { StateStore } from '../state/store.js'
 import { Journal } from '../journal/index.js'
 import { Router } from '../router/router.js'
-import { matchResponse } from '../matcher/matcher.js'
+import { matchResponse, compilePredicate } from '../matcher/matcher.js'
 import { runChaosPre, wrapSlowBody } from '../chaos/middleware.js'
-import { resolveChaos } from '../chaos/index.js'
+import { resolveChaos, sampleDelay, applyDelay } from '../chaos/index.js'
 import { createAdminHandler } from '../admin/index.js'
 import { isAdminPath } from '../admin/index.js'
 import { proxyRequest } from '../proxy/index.js'
 import { proxyAndRecord, replayOrRecord } from '../recorder/index.js'
 import { renderBody, createSeededFaker } from '../template/index.js'
+import { replyShorthand } from '../responders/reply.js'
 import type { CompiledRoute, CompiledResponse, HttpMethod, MockRequest, MockContext } from '../types.js'
 import type { ChaosConfig } from '../chaos/index.js'
 import type { AdminConfig } from '../admin/index.js'
@@ -234,6 +235,11 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
       route.scenarios,
     )
 
+    // Apply per-response delay (in addition to any chaos latency)
+    if (response?.delay !== undefined) {
+      await applyDelay(sampleDelay(response.delay))
+    }
+
     if (!response) {
       journal.record({
         timestamp: t0,
@@ -261,6 +267,7 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
       state: store,
       scenario: store.scenarios.active,
       faker: createSeededFaker(seed, route.id, mockReq.params),
+      reply: replyShorthand,
     }
 
     // Resolve body — handler overrides take precedence over static body
@@ -370,8 +377,14 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
               body: r.body,
             }
             if (r.scenario !== undefined) cr.scenario = r.scenario
-            if (r.when !== undefined) cr.when = r.when
+            if (r.when !== undefined) {
+              // Compile plain when-objects; pass through already-compiled predicates
+              cr.when = Array.isArray(r.when)
+                ? r.when
+                : compilePredicate(r.when as Record<string, unknown>)
+            }
             if (r.delay !== undefined) cr.delay = r.delay
+            if (r.handler !== undefined) cr.handler = r.handler
             return cr
           })
         : [{

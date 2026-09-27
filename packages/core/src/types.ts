@@ -62,4 +62,14 @@ export interface MockContext {
   state: import('./state/store.js').StateStore
   scenario: string
   faker: import('@faker-js/faker').Faker
+  /**
+   * Convenience method to build a reply. Returns a ReplyBuilder so you can
+   * chain `.header()`, `.json()`, `.text()`, or `.file()`.
+   *
+   * @example
+   * return ctx.reply(200, { id: 1 })          // JSON body shorthand
+   * return ctx.reply(201)                      // status only
+   * return ctx.reply(404, { error: 'nope' }, { 'x-trace': '123' })
+   */
+  reply: import('./responders/reply.js').ReplyFn
 }
