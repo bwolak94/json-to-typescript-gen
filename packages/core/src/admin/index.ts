@@ -179,6 +179,18 @@ export function createAdminHandler(deps: AdminDeps): (
       return true
     }
 
+    // ── GET /__admin/chaos ───────────────────────────────────────────────────
+    if (method === 'GET' && sub === '/chaos') {
+      sendJson(res, 200, getChaos())
+      return true
+    }
+
+    // ── GET /__admin/state ───────────────────────────────────────────────────
+    if (method === 'GET' && sub === '/state') {
+      sendJson(res, 200, state.snapshot())
+      return true
+    }
+
     // ── PUT /__admin/chaos ───────────────────────────────────────────────────
     if (method === 'PUT' && sub === '/chaos') {
       const body = await readBody(req)

@@ -78,6 +78,24 @@ export function reply(status = 200): ReplyBuilder {
   return new ReplyBuilder(status)
 }
 
+/**
+ * Convenience shorthand used as `ctx.reply(status, body?, headers?)`.
+ * Returns a ReplyBuilder so you can chain `.header()` etc.
+ */
+export function replyShorthand(
+  status: number,
+  body?: unknown,
+  headers?: Record<string, string>,
+): ReplyBuilder {
+  const r = new ReplyBuilder(status)
+  if (headers) for (const [k, v] of Object.entries(headers)) r.header(k, v)
+  if (body !== undefined) r.json(body)
+  return r
+}
+
+/** Type of the `ctx.reply` convenience function. */
+export type ReplyFn = (status: number, body?: unknown, headers?: Record<string, string>) => ReplyBuilder
+
 // ─── Resolve file body ────────────────────────────────────────────────────────
 
 const FILE_CONTENT_TYPES: Record<string, string> = {
