@@ -25,6 +25,12 @@ export interface CompiledRoute {
   scenarios?: string[]
 }
 
+export interface HandlerResult {
+  status: number
+  headers: Record<string, string>
+  body: unknown
+}
+
 export interface CompiledResponse {
   when?: unknown // CompiledPredicate — cast by matcher/matcher.ts to avoid circular import
   scenario?: string
@@ -32,6 +38,11 @@ export interface CompiledResponse {
   headers: Record<string, string>
   delay?: DelaySpec
   body: unknown // BodyRenderer — implemented in feat/f2-template-engine
+  /**
+   * Optional context-aware handler. When set, overrides status/headers/body
+   * from this response with the handler's return value.
+   */
+  handler?: (ctx: MockContext) => Promise<HandlerResult>
 }
 
 export interface MockRequest {

@@ -10,7 +10,8 @@ import { createAdminHandler } from '../admin/index.js'
 import { isAdminPath } from '../admin/index.js'
 import { proxyRequest } from '../proxy/index.js'
 import { proxyAndRecord, replayOrRecord } from '../recorder/index.js'
-import type { CompiledRoute, CompiledResponse, HttpMethod, MockRequest } from '../types.js'
+import { renderBody, createSeededFaker } from '../template/index.js'
+import type { CompiledRoute, CompiledResponse, HttpMethod, MockRequest, MockContext } from '../types.js'
 import type { ChaosConfig } from '../chaos/index.js'
 import type { AdminConfig } from '../admin/index.js'
 import type { ProxyConfig } from '../proxy/index.js'
@@ -30,6 +31,10 @@ export interface MockServerOptions {
   admin?: Partial<AdminConfig>
   /** Proxy config for forwarding unmatched requests upstream. */
   proxy?: ProxyConfig
+  /** Initial compiled routes to load at startup (e.g. from YAML mock files). */
+  initialRoutes?: CompiledRoute[]
+  /** Global faker seed for template rendering. Default: 42. */
+  seed?: number
 }
 
 export interface MockServerStartResult {
@@ -55,6 +60,8 @@ export interface MockServer {
   stop(): Promise<void>
   /** Add a runtime route override (highest priority). */
   use(route: UseRouteSpec): void
+  /** Replace the full set of file-loaded routes (used on hot reload). */
+  setRoutes(routes: CompiledRoute[]): void
   /** Set the globally active scenario. */
   scenario(name: string): void
   /** Access the shared state store. */
@@ -75,12 +82,15 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
     chaos: initialChaos = {},
     admin: adminOpts = {},
     proxy: proxyConfig,
+    initialRoutes = [],
+    seed = 42,
   } = options
 
   // Shared state
   const store = new StateStore(defaultScenario)
   const journal = new Journal()
   const runtimeRoutes: CompiledRoute[] = []
+  let fileRoutes: CompiledRoute[] = [...initialRoutes]
   let chaosConfig: ChaosConfig = { ...initialChaos }
   let baseUrl = ''
   let startedAt: Date | undefined
@@ -92,13 +102,11 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
   if (adminOpts.token !== undefined) adminConfig.token = adminOpts.token
 
   // Rebuild router whenever routes change.
-  // runtimeRoutes is newest-first (prepended); deduplicate by method+path so the
-  // most recently added route wins — the trie overwrites on duplicate inserts,
-  // so we only add the first (newest) occurrence of each method+path pair.
+  // runtimeRoutes (highest priority) override fileRoutes on duplicate method+path.
   function buildRouter(): Router<CompiledRoute> {
     const router = new Router<CompiledRoute>()
     const seen = new Set<string>()
-    for (const route of runtimeRoutes) {
+    for (const route of [...runtimeRoutes, ...fileRoutes]) {
       const key = `${route.method.toUpperCase()}:${route.path}`
       if (!seen.has(key)) {
         seen.add(key)
@@ -111,7 +119,7 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
   let router = buildRouter()
 
   const adminHandler = createAdminHandler({
-    getRoutes: () => [...runtimeRoutes],
+    getRoutes: () => [...runtimeRoutes, ...fileRoutes],
     state: store,
     getChaos: () => chaosConfig,
     setChaos: (cfg) => { chaosConfig = cfg },
@@ -244,8 +252,31 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
       return
     }
 
-    // Resolve body
-    const resolvedBody = await resolveBody(response.body)
+    // Build MockContext for template rendering and handler execution
+    const ctx: MockContext = {
+      req: mockReq,
+      params: mockReq.params,
+      query: mockReq.query,
+      body: mockReq.body,
+      state: store,
+      scenario: store.scenarios.active,
+      faker: createSeededFaker(seed, route.id, mockReq.params),
+    }
+
+    // Resolve body — handler overrides take precedence over static body
+    let finalStatus = response.status
+    let finalHeaders: Record<string, string> = { ...response.headers }
+    let resolvedBody: unknown
+
+    if (response.handler) {
+      const result = await response.handler(ctx)
+      finalStatus = result.status
+      finalHeaders = { ...finalHeaders, ...result.headers }
+      resolvedBody = result.body
+    } else {
+      resolvedBody = await resolveBody(response.body, ctx, seed, route.id)
+    }
+
     const isJson = resolvedBody !== null && typeof resolvedBody === 'object'
     const bodyStr = resolvedBody === undefined || resolvedBody === null
       ? ''
@@ -257,7 +288,7 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
       ...(isJson ? { 'Content-Type': 'application/json' } : {}),
       'Content-Length': String(Buffer.byteLength(bodyStr)),
       'X-Mock-Route': route.id,
-      ...response.headers,
+      ...finalHeaders,
     }
 
     // Wrap slow body if configured
@@ -269,12 +300,12 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
       timestamp: t0,
       request: { method, path: urlPath, headers, body },
       routeId: route.id,
-      response: { status: response.status, headers: responseHeaders },
+      response: { status: finalStatus, headers: responseHeaders },
       duration: Date.now() - t0,
       scenario: store.scenarios.active,
     })
 
-    res.writeHead(response.status, responseHeaders)
+    res.writeHead(finalStatus, responseHeaders)
     if (method !== 'HEAD') res.end(bodyStr)
     else res.end()
   }
@@ -320,6 +351,11 @@ export function createMockServer(options: MockServerOptions = {}): MockServer {
       })
       server = undefined
       baseUrl = ''
+    },
+
+    setRoutes(routes: CompiledRoute[]): void {
+      fileRoutes = [...routes]
+      router = buildRouter()
     },
 
     use(spec: UseRouteSpec): void {
@@ -380,9 +416,10 @@ function readBody(req: http.IncomingMessage): Promise<{ parsed: unknown; raw: Bu
   })
 }
 
-async function resolveBody(body: unknown): Promise<unknown> {
+async function resolveBody(body: unknown, ctx: MockContext, globalSeed: number, routeId: string): Promise<unknown> {
   if (typeof body === 'function') {
-    return (body as () => unknown | Promise<unknown>)()
+    return (body as (ctx: MockContext) => unknown | Promise<unknown>)(ctx)
   }
-  return body
+  const templateCtx = { params: ctx.params, query: ctx.query, headers: ctx.req.headers, body: ctx.body, state: ctx.state }
+  return renderBody(body, templateCtx, { globalSeed, routeId })
 }

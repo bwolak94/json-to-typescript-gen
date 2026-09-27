@@ -13,7 +13,6 @@ export interface ImportOpenApiOptions {
 // ─── HTTP methods present on path items ───────────────────────────────────────
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const
-type HttpVerb = typeof HTTP_METHODS[number]
 
 // ─── Path conversion ──────────────────────────────────────────────────────────
 
