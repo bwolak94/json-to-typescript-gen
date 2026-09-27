@@ -2,12 +2,12 @@ import { resolve } from 'node:path'
 import pino from 'pino'
 import {
   loadConfig,
-  HttpAdapter,
-  handleSignals,
+  compileRoutes,
+  createMockServer,
+  StateStore,
   RouteWatcher,
   ConfigError,
 } from '@quick-mock-server/core'
-import { buildRouter, createHandler } from '../dispatch.js'
 import {
   printBanner,
   printStartupInfo,
@@ -38,7 +38,11 @@ export interface StartOptions {
 // ─── Command ─────────────────────────────────────────────────────────────────
 
 export async function startCommand(options: StartOptions): Promise<void> {
-  const cwd = process.cwd()
+  // When --config points to a file in another directory, resolve paths relative
+  // to that file's directory so that mocksDir etc. work as the user expects.
+  const cwd = options.config
+    ? resolve(options.config, '..')
+    : process.cwd()
 
   // ── Load config ──────────────────────────────────────────────────────────
   let result: Awaited<ReturnType<typeof loadConfig>>
@@ -52,37 +56,32 @@ export async function startCommand(options: StartOptions): Promise<void> {
 
   const config = result.config
   const port = options.port ?? config.port
-  const scenario = options.scenario ?? config.scenarios.default
+  const scenario = options.scenario ?? config.scenarios.default ?? ''
 
-  // ── Build initial router ────────────────────────────────────────────────
-  const state = { router: buildRouter(result.routes) }
+  // ── Create server with compiled routes ───────────────────────────────────
+  const store = new StateStore(scenario)
+  const mocksDir = resolve(process.cwd(), config.mocksDir)
+  const initialRoutes = await compileRoutes(result.routes, result.resources, store, config.seed, mocksDir)
 
-  // ── Create server ────────────────────────────────────────────────────────
-  const adapter = new HttpAdapter(
-    (req, res) => {
-      const start = Date.now()
-      const handler = createHandler(state)
-      return handler(req, res).then(() => {
-        logger.info({
-          method: req.method,
-          url: req.url,
-          status: res.statusCode,
-          ms: Date.now() - start,
-        })
-      })
-    },
-    { shutdownTimeoutMs: 10_000 },
-  )
+  const server = createMockServer({
+    port,
+    host: config.host,
+    defaultScenario: scenario,
+    initialRoutes,
+    seed: config.seed,
+    admin: config.admin,
+    ...(config.proxy ? { proxy: config.proxy } : {}),
+  })
 
-  // ── Startup ──────────────────────────────────────────────────────────────
-  const { url } = await adapter.start(port, config.host)
+  // ── Start ─────────────────────────────────────────────────────────────────
+  const { url } = await server.start()
 
   printBanner('0.0.1')
   printStartupInfo({
     url,
     port,
     scenario,
-    routeCount: result.routes.length,
+    routeCount: result.routes.length + result.resources.length,
     watch: options.watch ?? false,
     warnings: result.warnings,
   })
@@ -96,11 +95,14 @@ export async function startCommand(options: StartOptions): Promise<void> {
     watcher = new RouteWatcher({ mocksDir, cwd, debounceMs: 100 })
 
     watcher.onReload((snapshot) => {
-      state.router = buildRouter(snapshot.routes)
-      printReload(snapshot.routes.length)
-      for (const w of snapshot.warnings) {
-        process.stderr.write(`  ⚠  ${w}\n`)
-      }
+      const reloadedStore = server.state
+      void compileRoutes(snapshot.routes, snapshot.resources, reloadedStore, config.seed, mocksDir).then((recompiled) => {
+        server.setRoutes(recompiled)
+        printReload(snapshot.routes.length + snapshot.resources.length)
+        for (const w of snapshot.warnings) {
+          process.stderr.write(`  ⚠  ${w}\n`)
+        }
+      })
     })
 
     await watcher.start()
@@ -109,7 +111,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
   // ── Graceful shutdown ────────────────────────────────────────────────────
   const shutdown = async () => {
     if (watcher) await watcher.stop()
-    await adapter.stop()
+    await server.stop()
     printStopped()
     process.exit(0)
   }
@@ -118,7 +120,6 @@ export async function startCommand(options: StartOptions): Promise<void> {
   process.once('SIGTERM', () => void shutdown())
 
   if (options.chaos === false) {
-    // --no-chaos flag noted; chaos middleware not yet implemented (Task 12)
-    process.stderr.write('  · --no-chaos: chaos middleware not yet implemented\n')
+    process.stderr.write('  · --no-chaos flag noted (chaos middleware inactive by default)\n')
   }
 }

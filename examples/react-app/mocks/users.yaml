@@ -22,3 +22,15 @@ routes:
           - id: 3
             name: Carol
             role: user
+          - id: 4
+            name: Dave
+            role: user
+
+  - method: GET
+    path: /users/:id
+    responses:
+      - status: 200
+        body:
+          id: 1
+          name: Alice
+          role: admin

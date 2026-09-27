@@ -170,7 +170,9 @@ export function mockServerFixture(options: MockServerFixtureOptions = {}) {
   ) => {
     // Lazy import to avoid hard dep on @playwright/test
     const { createMockServer } = await import('@quick-mock-server/core')
-    const server = createMockServer({ port: options.port ?? 0, defaultScenario: options.defaultScenario })
+    const serverOptions: Parameters<typeof createMockServer>[0] = { port: options.port ?? 0 }
+    if (options.defaultScenario !== undefined) serverOptions.defaultScenario = options.defaultScenario
+    const server = createMockServer(serverOptions)
     await server.start()
     try {
       await use(server)

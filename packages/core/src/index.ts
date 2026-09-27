@@ -3,6 +3,7 @@ export {
   defineConfig,
   defineRoutes,
   loadConfig,
+  compileRoutes,
 } from './config/index.js'
 export type {
   QmsConfig,
@@ -113,6 +114,7 @@ export type {
   DelaySpec,
   CompiledRoute,
   CompiledResponse,
+  HandlerResult,
   MockRequest,
   MockContext,
 } from './types.js'

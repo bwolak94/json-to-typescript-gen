@@ -8,6 +8,7 @@ import type { LoadedRoute } from './loader.js'
 
 export type { QmsConfig, RawRoute, ResourceConfig, ResourceBelongsTo }
 export type { LoadedRoute, RouteOrigin, LoadedFile } from './loader.js'
+export { compileRoutes } from './compiler.js'
 export type { RouteCollision, MergeResult } from './merger.js'
 export type {
   RawResponse,

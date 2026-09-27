@@ -1,5 +1,5 @@
 import { writeFile, mkdir } from 'node:fs/promises'
-import { resolve, join, basename, extname } from 'node:path'
+import { resolve, join } from 'node:path'
 import { stringify } from 'yaml'
 import { importOpenApi, generateJsonSchema } from '@quick-mock-server/core'
 import type { RawRoute } from '@quick-mock-server/core'
